@@ -1,0 +1,32 @@
+
+h1 {
+	text-align: center;
+	margin-bottom: 20px;
+}
+#errors {
+	text-align: center;
+}
+
+#users-list {
+	padding: 5px;
+	
+}
+#users-list h5 {
+	/*text-align: center;*/
+	font-weight: bolder;
+}
+#users-list {
+	text-align: center;
+}
+
+#new-msg {
+	margin: 0 auto;
+	position: fixed;
+	bottom: 10px;
+	text-align: center;
+	width: auto;
+}
+
+#message-container span {
+	font-weight: bold;
+}

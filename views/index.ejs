@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Socket.IO Group Chat</title>
+<meta name="description" content="">
+<link rel="stylesheet" type="text/css" href="./stylesheet.css">
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+
+	var socket   = io.connect();
+	var user;
+
+	///MAKE TIMESTAMP FOR MESSAGES
+	function formatDate(date) {
+              var hours = date.getHours();
+              var minutes = date.getMinutes();
+              var ampm = hours >= 12 ? 'pm' : 'am';
+              hours = hours % 12;
+              hours = hours ? hours : 12; // the hour '0' should be '12'
+              minutes = minutes < 10 ? '0'+minutes : minutes;
+              var strTime = hours + ':' + minutes + ' ' + ampm;
+              return date.getMonth()+1 + "/" + date.getDate() + "/" + date.getFullYear() + "  " + strTime;
+            }
+
+    var d = new Date();
+    var newdate = formatDate(d);
+
+	var new_user = function() {
+		var username  = prompt('Please enter a username to enter group chat', 'Choose a unique name!');
+		// var socket_id = client.id;
+		// console.log(socket);
+		socket.emit('chat_load', {username: username});
+		console.log('A new user connected. ' + username);
+	} 
+	//new user joins - loads prior chat
+	new_user();
+
+	socket.on('user_exists', function(data) {
+		$('#errors').html("<p class='text-warning'>" + data.error + "</p>");
+		new_user();
+	})
+
+	//load existing messages to the page
+	socket.on('load_messages', function(data) {
+
+		$('#errors').html("");
+		// console.log(username);
+		// console.log(messages);
+		user = data.username;
+		var messages = data.messages;
+		var all_messages = "";
+		for (var i = 0; i < messages.length; i++) {
+			if(messages.length > 50) {
+				messages.slice(0,5);
+				all_messages += "<p><span> " + messages[i].username + " </span>: " + messages[i].message + "</p>";
+			} else {
+			all_messages += "<p><span> " + messages[i].username + " </span>: " + messages[i].message + "</p>";
+			}
+		}
+		console.log(all_messages);
+		$('#message-container').append(all_messages);
+		$('#message-container').append("<p><span> " + data.username + " </span> has joined the chatroom.</p>");
+	});
+
+
+	//LOAD ALL ONLINE USERS
+	socket.on('load_online_users', function(data) {
+		console.log(data.users);
+		var html_str = "";
+			for (var i = 0; i < data.users.length; i++) {
+				html_str += "<p>" + data.users[i] + "</p>";
+			}
+			
+		console.log(html_str);
+		$('#users-list').append(html_str);
+	})
+
+	//SUBMIT THE NEW MESSAGE TO THE SERVER FOR EMIT TO THE BOARD
+	$('#new-msg').submit(function() {
+		socket.emit('new_message', {message: $('#message').val(), username: user, timestamp: newdate});
+		console.log($('#message').val());
+		$('#message').val('');
+		return false;
+	});
+
+	//APPEND THE NEW MESSAGE TO THE BOARD
+	socket.on('new_message_post', function(data) {
+		$('#message-container').append("<p>" + data.timestamp + " <span> " + data.username + "</span>: " + data.new_message + "</p>");
+	})
+
+
+
+});
+</script>
+</head>
+
+<body>
+	<div class="container">
+
+		<div class="row">
+			<div class="col-xs-12 col-md-12 col-lg-12" id="header">
+				<h1>Conversation Board</h1>
+				<div id="errors" class="col-xs-12 col-md-6 col-md-offset-3 col-lg-8 col-lg-offset-4">
+				</div>
+			</div>
+		</div>
+		
+		<div class="row">
+			<div id="users-list" class="col-xs-12 col-md-2 col-lg-2">
+				<h5>Users Currently in the Chatroom:</h5>
+			</div>
+		
+			<div id="message-container" class="col-xs-12 col-md-10 col-lg-10"></div>
+		</div>
+
+		<div class="row">
+			<div class="col-xs-12 col-md-10 col-md-offset-2 col-lg-10 col-lg-offset-2">
+				<div class="form-group">
+					<form id="new-msg" class="form-horizontal">
+						<input type="text" id="message" size="95%" placeholder="Enter new message here...">
+						<input type="submit" value="Send Message" class="btn btn-primary">
+					</form>
+				</div>
+			</div>	
+		</div>
+
+	</div>	
+
+
+</body>
+<html>
